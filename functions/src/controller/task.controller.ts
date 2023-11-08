@@ -74,8 +74,8 @@ exports.updateTask = functions.https.onRequest((request, response) => {
                 id: requestData.id,
                 title: requestData.title,
                 description: requestData.description,
-                status: requestData.status as Status,
-                createdDate: new Date(requestData.createdDate),
+                status: requestData.status,
+                createdDate: requestData.createdDate as Date,
                 updatedDate: new Date()
             };
 
