@@ -8,11 +8,15 @@ const MISSING_TASK_DATA_ERROR = "Missing task data in the request body.";
 
 const corsMiddleware = cors({origin: true});
 
-exports.getTasks = functions.https.onRequest(async (request, response) => {
+exports.getTaskList = functions.https.onRequest(async (request, response) => {
     corsMiddleware(request, response, async () => {
         try {
             const querySnapshot = await dbTasks.get();
-            const tasks: Task[] = querySnapshot.docs.map((docRef) => docRef.data() as Task);
+            const tasks: Task[] = querySnapshot.docs.map((docRef) => {
+                const task: Task = docRef.data() as Task;
+                task.id = docRef.id;
+                return task;
+            });
 
             if (tasks.length === 0) {
                 functions.logger.log("Task list is empty.");
@@ -75,7 +79,7 @@ exports.updateTask = functions.https.onRequest((request, response) => {
                 title: requestData.title,
                 description: requestData.description,
                 status: requestData.status,
-                createdDate: requestData.createdDate as Date,
+                createdDate: new Date(requestData.createdDate),
                 updatedDate: new Date()
             };
 
