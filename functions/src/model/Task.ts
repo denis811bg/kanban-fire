@@ -1,10 +1,11 @@
 import { Status } from "../enum/Status";
+import { Timestamp } from "@google-cloud/firestore"
 
 export interface Task {
     id?: string;
     title: string;
     description: string;
     status: Status;
-    createdDate: Date;
-    updatedDate?: Date;
+    createdDate: Timestamp;
+    updatedDate?: Timestamp;
 }

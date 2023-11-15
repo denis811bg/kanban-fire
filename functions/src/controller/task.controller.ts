@@ -3,6 +3,7 @@ import { dbTasks } from "../db-collections";
 import * as cors from "cors";
 import { Task } from "../model/Task";
 import { Status } from "../enum/Status";
+import { Timestamp } from "@google-cloud/firestore"
 
 const MISSING_TASK_DATA_ERROR = "Missing task data in the request body.";
 
@@ -49,7 +50,7 @@ exports.createTask = functions.https.onRequest((request, response) => {
                 title: requestData.title,
                 description: requestData.description,
                 status: Status.TODO,
-                createdDate: new Date(),
+                createdDate: Timestamp.now(),
             };
 
             const docRef = await dbTasks.add(newTask);
@@ -79,8 +80,8 @@ exports.updateTask = functions.https.onRequest((request, response) => {
                 title: requestData.title,
                 description: requestData.description,
                 status: requestData.status,
-                createdDate: new Date(requestData.createdDate),
-                updatedDate: new Date()
+                createdDate: requestData.createdDate,
+                updatedDate: Timestamp.now()
             };
 
             await dbTasks.doc(requestData.id).update(updatedTask);

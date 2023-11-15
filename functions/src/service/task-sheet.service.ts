@@ -4,6 +4,7 @@ import { Status } from "../enum/Status";
 import * as cors from "cors";
 import { dbTasks } from "../db-collections";
 import { Task } from "../model/Task";
+import { Timestamp } from "@google-cloud/firestore"
 
 const MISSING_TASK_DATA_ERROR = "Missing task list data in the google sheet. Something went wrong or sheet is empty.";
 
@@ -24,7 +25,7 @@ exports.initTaskList = functions.https.onRequest((request, response) => {
                     title: taskRow.get('title'),
                     description: taskRow.get('description'),
                     status: Status.TODO,
-                    createdDate: new Date(),
+                    createdDate: Timestamp.now(),
                 };
 
                 const docRef = await dbTasks.add(newTask);
