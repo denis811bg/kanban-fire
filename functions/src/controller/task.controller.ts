@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions"
 import { dbTasks } from "../db-collections";
 import * as cors from "cors";
-import { Task } from "../model/Task";
+import { Task } from "../model/task";
 import { Status } from "../enum/Status";
 import { Timestamp } from "@google-cloud/firestore"
 

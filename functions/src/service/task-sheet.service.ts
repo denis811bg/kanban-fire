@@ -3,7 +3,7 @@ import { loadTaskList } from "../utils/sheet.utils";
 import { Status } from "../enum/Status";
 import * as cors from "cors";
 import { dbTasks } from "../db-collections";
-import { Task } from "../model/Task";
+import { Task } from "../model/task";
 import { Timestamp } from "@google-cloud/firestore"
 
 const MISSING_TASK_DATA_ERROR = "Missing task list data in the google sheet. Something went wrong or sheet is empty.";
