@@ -46,18 +46,24 @@ exports.createTask = functions.https.onRequest((request, response) => {
                 return;
             }
 
-            const newTask: Task = {
+            const docRef = await dbTasks.add({
                 title: requestData.title,
                 description: requestData.description,
                 status: Status.TODO,
                 createdDate: Timestamp.now(),
-            };
+            });
+            const docSnapshot = await docRef.get();
 
-            const docRef = await dbTasks.add(newTask);
-            newTask.id = docRef.id;
+            if (docSnapshot.exists) {
+                const newTask = docSnapshot.data() as Task;
+                newTask.id = docRef.id;
 
-            functions.logger.log("Task created successfully.");
-            response.status(200).json({data: newTask});
+                functions.logger.log("Task created successfully.");
+                response.status(200).json({data: newTask});
+            } else {
+                functions.logger.log("Task does not exist.");
+                response.status(200).json({data: {}});
+            }
         } catch (error: any) {
             functions.logger.error("Error creating a new task.", error.message);
             response.status(500).json({error: error.message});
@@ -75,19 +81,24 @@ exports.updateTask = functions.https.onRequest((request, response) => {
                 return;
             }
 
-            const updatedTask = {
+            await dbTasks.doc(requestData.id).update({
                 id: requestData.id,
                 title: requestData.title,
                 description: requestData.description,
                 status: requestData.status,
                 createdDate: requestData.createdDate,
                 updatedDate: Timestamp.now()
-            };
+            });
+            const docSnapshot = await dbTasks.doc(requestData.id).get();
+            if (docSnapshot.exists) {
+                const updatedTask = docSnapshot.data() as Task;
 
-            await dbTasks.doc(requestData.id).update(updatedTask);
-
-            functions.logger.log("Task updated successfully.");
-            response.status(200).json({data: updatedTask});
+                functions.logger.log("Task updated successfully.");
+                response.status(200).json({data: updatedTask});
+            } else {
+                functions.logger.log("Task does not exist.");
+                response.status(200).json({data: {}});
+            }
         } catch (error: any) {
             functions.logger.error("Error updating an existing task.", error.message);
             response.status(500).json({error: error.message});
