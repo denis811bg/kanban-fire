@@ -1,44 +1,56 @@
 import * as functions from "firebase-functions"
-import { loadTaskList } from "../utils/sheet.utils";
-import { Status } from "../enum/Status";
-import * as cors from "cors";
+import { getSpreadsheetId, loadTaskList, TaskRowData } from "../utils/sheet.utils";
 import { dbTasks } from "../db-collections";
 import { Task } from "../model/task";
-import { Timestamp } from "@google-cloud/firestore"
+import { handleErrors, onRequestWithCorsAsync } from "../utils/http.utils";
+import { GoogleSpreadsheetRow } from "google-spreadsheet";
+import { firestore } from "firebase-admin";
+import { TaskDto } from "../dto/task.dto";
+import DocumentReference = firestore.DocumentReference;
+import DocumentData = firestore.DocumentData;
+import DocumentSnapshot = firestore.DocumentSnapshot;
 
-const MISSING_TASK_DATA_ERROR = "Missing task list data in the google sheet. Something went wrong or sheet is empty.";
-
-const corsMiddleware = cors({origin: true});
-
-exports.initTaskList = functions.https.onRequest((request, response) => {
-    corsMiddleware(request, response, async () => {
-        try {
-            const taskRows = await loadTaskList();
-            if (!taskRows || taskRows.length === 0) {
-                functions.logger.error(MISSING_TASK_DATA_ERROR);
-                response.status(400).json({error: MISSING_TASK_DATA_ERROR});
-                return;
-            }
-
-            const taskList: Task[] = await Promise.all(taskRows.map(async (taskRow) => {
-                const newTask: Task = {
-                    title: taskRow.get('title'),
-                    description: taskRow.get('description'),
-                    status: Status.TODO,
-                    createdDate: Timestamp.now(),
-                };
-
-                const docRef = await dbTasks.add(newTask);
-                newTask.id = docRef.id;
-
-                return newTask;
-            }));
-
-            functions.logger.log("Task list initiation completed successfully.");
-            response.status(200).json({data: taskList});
-        } catch (error: any) {
-            functions.logger.error("Error initiation task list.", error.message);
-            response.status(500).json({error: error.message});
+exports.initTaskList = onRequestWithCorsAsync(async (request, response) => {
+    try {
+        const taskRows: GoogleSpreadsheetRow<TaskRowData>[] = await loadTaskList();
+        if (!taskRows || taskRows.length === 0) {
+            handleErrors(
+                {
+                    source: '[task-sheet.service:initTaskList]',
+                    description: `Sheet doesn't contain items. Sheet id: ${getSpreadsheetId()}`
+                },
+                response,
+                400
+            )
+            return;
         }
-    });
+
+        const taskList: Task[] = await Promise.all(taskRows.map(async (taskRow: GoogleSpreadsheetRow<TaskRowData>) => {
+            const taskDto: TaskDto = {
+                title: taskRow.get('title'),
+                description: taskRow.get('description'),
+                status: taskRow.get('status'),
+                createdDate: taskRow.get('createdDate'),
+            };
+
+            const docRef: DocumentReference<DocumentData> = await dbTasks.add(taskDto);
+            await docRef.update({id: docRef.id});
+            const docSnapshot: DocumentSnapshot<DocumentData> = await docRef.get();
+
+            return docSnapshot.data() as Task;
+        }));
+
+        functions.logger.log(`Task list initiation completed successfully. Length of the task list is ${taskList.length} items`);
+        response.status(200).json({data: taskList});
+    } catch (error: any) {
+        handleErrors(
+            {
+                source: '[task-sheet.service:initTaskList]',
+                description: 'Error initiation task list.',
+                errorMessage: error.message
+            },
+            response,
+            500
+        );
+    }
 });

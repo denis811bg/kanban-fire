@@ -1,8 +1,8 @@
 import { Status } from "../enum/Status";
-import { Timestamp } from "@google-cloud/firestore"
+import { Timestamp } from "@google-cloud/firestore";
 
-export interface Task {
-    id: string;
+export interface TaskDto {
+    id?: string;
     title: string;
     description: string;
     status: Status;
